@@ -1,0 +1,9 @@
+rule:
+  signal_007: # Allow initial values on signals
+    disable: true
+  process_016: # Add label for process statement
+    disable: true
+  process_018: # Add a label for the "end process"
+    disable: true
+  instantiation_034: # Change to component instantiation
+    disable: true

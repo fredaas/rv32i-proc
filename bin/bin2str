@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""
+Usage:
+    bin2str <path> [-p <value>] [-b <value>] [-f <value>] [--big-endian]
+
+Options:
+    <path>
+        Path to binary file.
+
+    -p, --pad <value>
+        Zero pad up to this value. [default: 0]
+
+    -b, --bytes_per_row <value>
+        Number of bytes to print per row. [default: 4]
+
+    -f, --format <value>
+        String base format. Possible values: 2, 8, 16. [default: 16]
+
+    --big-endian
+        Print bytes in big-endian order. [default: false]
+"""
+
+import math
+import os
+
+from docopt import docopt
+
+FORMAT_HEX = '{:02x}'
+FORMAT_OCT = '{:03o}'
+FORMAT_BIN = '{:08b}'
+
+
+class Option:
+    FORMAT = FORMAT_HEX
+    BYTES_PER_ROW = 4
+    BIG_ENDIAN = False
+    ZERO_PAD = 0
+
+    @staticmethod
+    def get_format(base):
+        assert base in [2, 8, 16], 'Invalid base'
+        if base == 2:
+            return FORMAT_BIN
+        elif base == 8:
+            return FORMAT_OCT
+        elif base == 16:
+            return FORMAT_HEX
+
+    @staticmethod
+    def set_options(argv):
+        Option.BYTES_PER_ROW = int(argv['--bytes_per_row'], 10)
+        Option.BIG_ENDIAN = argv['--big-endian']
+        Option.FORMAT = Option.get_format(int(argv['--format']))
+        Option.ZERO_PAD = int(argv['--pad'], 0)
+
+
+def zero_pad(data):
+    delta = max(0, Option.ZERO_PAD - len(data))
+    delta = math.ceil(delta / Option.BYTES_PER_ROW) * Option.BYTES_PER_ROW
+    for _ in range(delta):
+        data.append(0)
+
+
+def read_file(path):
+    assert os.path.isfile(path), 'Invalid file path'
+    with open(path, 'rb') as fh:
+        return bytearray(fh.read().strip())
+
+
+def print_data_buff(data):
+    if not Option.BIG_ENDIAN:
+        data.reverse()
+    for item in data:
+        print(Option.FORMAT.format(item), end='')
+    print()
+
+
+def print_data(data):
+    zero_pad(data)
+    bytes_written = 0
+    buff = []
+    for x in data:
+        buff.append(x)
+        bytes_written += 1
+        if (bytes_written % Option.BYTES_PER_ROW) == 0:
+            print_data_buff(buff)
+            buff = []
+    return bytes_written
+
+
+def main():
+    argv = docopt(__doc__, help=True)
+
+    Option.set_options(argv)
+
+    data = read_file(argv['<path>'])
+
+    print_data(data)
+
+
+if __name__ == '__main__':
+    main()
